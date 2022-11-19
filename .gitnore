@@ -2,7 +2,6 @@
 
 # tf scratch directory
 /**/.terraform/
-C:/Scripts/terraform/Terraform Up and Running/CH 2/.terraform/
 
 # tf state files
 /**/terraform.tfstate
