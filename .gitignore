@@ -1,0 +1,12 @@
+# ignore Terraform files
+
+# tf scratch directory
+/**/.terraform/
+
+# tf state files
+/**/terraform.tfstate
+/**/terraform.tfstate.backup
+
+/**/terraform.tfvars
+
+test.txt
