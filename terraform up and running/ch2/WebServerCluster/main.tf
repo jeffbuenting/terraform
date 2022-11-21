@@ -11,21 +11,6 @@ provider "aws" {
     region = "us-east-1"
 }
 
-variable "server_port" {
-    description = "The port the server will use for HTTP requests"
-    type = number
-}
-
-data "aws_vpc" "default" {
-    default = true
-}
-
-data "aws_subnet_ids" "default" {
-    vpc_id = data.aws_vpc.default.ipv6_cidr_block
-}
-
-
-
 resource "aws_launch_configuration" "example" {
     image_id = "ami-08c40ec9ead489470"
     instance_type = "t2.micro"
@@ -44,8 +29,8 @@ resource "aws_launch_configuration" "example" {
 }
 
 resource "aws_autoscaling_group" "example" {
-    launch_configuration = aws_autoscaling_group.example.name
-    vpc_zone_identifier = data.aws_subnet_ids.default.ids
+    launch_configuration = aws_launch_configuration.example.name
+    vpc_zone_identifier = data.aws_subnets.default.ids
 
     target_group_arns = [aws_lb_target_group.asg.arn]
     health_check_type = "ELB"
@@ -60,28 +45,34 @@ resource "aws_autoscaling_group" "example" {
     }
 }
 
-resource "aws_lb" "example" {
-    name = "terraform-asg-example"
-    load_balancer_type = "application"
-    subnets = data.aws_subnet_ids.default.ids
-    security_groups = [aws_security_group.alb.id]
+
+
+
+
+
+
+
+
+variable "server_port" {
+    description = "The port the server will use for HTTP requests"
+    type = number
+    default = 8080
 }
 
-resource "aws_lb_listener" "http" {
-    load_balancer_arn = aws_lb.example.arn
-    port = 80
-    protocol = "HTTP"
+data "aws_vpc" "default" {
+    default = true
+}
 
-    # by default return simple 404
-    default_action {
-        type = "fixed-response"
+data "aws_subnets" "default" {
+    filter {
+        name = "vpc-id"
+        values = [data.aws_vpc.default.id]
+    }
 
-        fixed_response {
-            content_type = "text/plain"
-            message_body = "404: page not found"
-            status_code = 404
-        }
-    }   
+    # filter {
+    #     name = "tag-key"
+    #     values = ["public"]
+    # }
 }
 
 resource "aws_security_group" "alb" {
@@ -102,6 +93,43 @@ resource "aws_security_group" "alb" {
         protocol = "-1"
         cidr_blocks = ["0.0.0.0/0"]
     }
+}
+
+resource "aws_security_group" "instance" {
+    name = "terraform-example-instance"
+
+    ingress {
+        from_port = var.server_port
+        to_port = var.server_port
+        protocol = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+}
+
+
+
+resource "aws_lb" "example" {
+    name = "terraform-asg-example"
+    load_balancer_type = "application"
+    subnets = data.aws_subnets.default.ids
+    security_groups = [aws_security_group.alb.id]
+}
+
+resource "aws_lb_listener" "http" {
+    load_balancer_arn = aws_lb.example.arn
+    port = 80
+    protocol = "HTTP"
+
+    # by default return simple 404
+    default_action {
+        type = "fixed-response"
+
+        fixed_response {
+            content_type = "text/plain"
+            message_body = "404: page not found"
+            status_code = 404
+        }
+    }   
 }
 
 resource "aws_lb_target_group" "asg" {
