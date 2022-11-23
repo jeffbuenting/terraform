@@ -1,7 +1,7 @@
 terraform {
   backend "s3" {
     bucket = "jdb-terraform-state"
-    key    = "stage/services/mysql/terraform.tfstate"
+    key    = "stage/data-stores/mysql/terraform.tfstate"
     region = "us-east-1"
 
     dynamodb_table = "terraform-locks"
