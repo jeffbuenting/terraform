@@ -43,9 +43,14 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "terraform-state-e
   rule {
     apply_server_side_encryption_by_default {
       kms_master_key_id = aws_kms_key.mykey.arn
-      sse_algorithm     = "AES256"
+      sse_algorithm     = "aws:kms"
     }
   }
+}
+
+resource "aws_s3_bucket_acl" "terraform-state-acl" {
+  bucket = aws_s3_bucket.terraform-state.id
+  acl    = "private"
 }
 
 resource "aws_dynamodb_table" "terraform_locks" {
