@@ -48,11 +48,6 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "terraform-state-e
   }
 }
 
-resource "aws_s3_bucket_acl" "terraform-state-acl" {
-  bucket = aws_s3_bucket.terraform-state.id
-  acl    = "private"
-}
-
 resource "aws_dynamodb_table" "terraform_locks" {
     name = "terraform-locks"
     billing_mode = "PAY_PER_REQUEST"
