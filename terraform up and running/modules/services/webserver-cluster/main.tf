@@ -16,22 +16,18 @@ terraform {
   }
 }
 
-provider "aws" {
-  region = "us-east-1"
-}
-
 data "terraform_remote_state" "db" {
   backend = "s3"
 
   config = {
-    bucket = "jdb-terraform-state"
-    key    = "stage/data-stores/mysql/terraform.tfstate"
+    bucket = var.db_remote_state_bucket
+    key    = var.db_remote_state_key
     region = "us-east-1"
   }
 }
 
 data "template_file" "user_data" {
-  template = file("user-data.sh")
+  template = file("${path.module}/user-data.sh")
 
   vars = {
     server_port = var.server_port
@@ -43,7 +39,7 @@ data "template_file" "user_data" {
 
 resource "aws_launch_configuration" "example" {
   image_id        = "ami-08c40ec9ead489470"
-  instance_type   = "t2.micro"
+  instance_type   = var.instance_type
   security_groups = [aws_security_group.instance.id]
 
   user_data = data.template_file.user_data.rendered
@@ -61,8 +57,8 @@ resource "aws_autoscaling_group" "example" {
   target_group_arns = [aws_lb_target_group.asg.arn]
   health_check_type = "ELB"
 
-  min_size = 2
-  max_size = 10
+  min_size = var.min_size
+  max_size = var.max_size
 
   tag {
     key                 = "Name"
@@ -70,14 +66,6 @@ resource "aws_autoscaling_group" "example" {
     propagate_at_launch = true
   }
 }
-
-
-
-
-
-
-
-
 
 variable "server_port" {
   description = "The port the server will use for HTTP requests"
@@ -94,45 +82,45 @@ data "aws_subnets" "default" {
     name   = "vpc-id"
     values = [data.aws_vpc.default.id]
   }
-
-  # filter {
-  #     name = "tag-key"
-  #     values = ["public"]
-  # }
 }
 
 resource "aws_security_group" "alb" {
-  name = "terraform-example-alb"
+  name = "${var.cluster_name}-alb"
+}
 
-  # allow inbound HTTP
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+resource "aws_security_group_rule" "allow_http_inbound" {
+  type              = "ingress"
+  security_group_id = aws_security_group.alb.id
 
-  # allow all outbound requests
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  from_port   = local.http_port
+  to_port     = local.http_port
+  protocol    = local.tcp_protocol
+  cidr_blocks = local.all_ips
+}
+
+resource "aws_security_group_rule" "allow_all_outbound" {
+  type              = "egress"
+  security_group_id = aws_security_group.alb.id
+
+  from_port   = local.any_port
+  to_port     = local.any_port
+  protocol    = local.tcp_protocol
+  cidr_blocks = local.all_ips
 }
 
 resource "aws_security_group" "instance" {
-  name = "terraform-example-instance"
-
-  ingress {
-    from_port   = var.server_port
-    to_port     = var.server_port
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  name = "${var.cluster_name}-instance"
 }
 
+resource "aws_security_group_rule" "allow_httpport_inbound" {
+  type              = "ingress"
+  security_group_id = aws_security_group.instance.id
 
+  from_port   = var.server_port
+  to_port     = var.server_port
+  protocol    = local.tcp_protocol
+  cidr_blocks = local.all_ips
+}
 
 resource "aws_lb" "example" {
   name               = "terraform-asg-example"
@@ -143,7 +131,7 @@ resource "aws_lb" "example" {
 
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.example.arn
-  port              = 80
+  port              = local.http_port
   protocol          = "HTTP"
 
   # by default return simple 404
