@@ -34,6 +34,11 @@ variable "custom_tags" {
   default     = {}
 }
 
+variable "enable_autoscaling" {
+  description = "If set to true, enable auto scaling"
+  type        = bool
+}
+
 locals {
   http_port    = 80
   any_port     = 0
