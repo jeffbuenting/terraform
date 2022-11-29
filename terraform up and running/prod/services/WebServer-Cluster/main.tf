@@ -11,6 +11,11 @@ module "webserver_cluster" {
   instance_type          = "m4.large"
   min_size               = 2
   max_size               = 10
+
+  custom_tags = {
+    Owner      = "team-foo"
+    DeployedBy = "Terraform"
+  }
 }
 
 resource "aws_autoscaling_schedule" "scale_out_during_business_housrs" {
