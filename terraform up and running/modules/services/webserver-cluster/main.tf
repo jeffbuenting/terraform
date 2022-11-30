@@ -1,20 +1,4 @@
-terraform {
-  backend "s3" {
-    bucket = "jdb-terraform-state"
-    key    = "stage/services/webserver-cluster/terraform.tfstate"
-    region = "us-east-1"
 
-    dynamodb_table = "terraform-locks"
-    encrypt        = true
-  }
-
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 4.0"
-    }
-  }
-}
 
 data "terraform_remote_state" "db" {
   backend = "s3"
@@ -84,7 +68,7 @@ resource "aws_autoscaling_group" "example" {
   dynamic "tag" {
     for_each = var.custom_tags
 
-    content = {
+    content {
       key                 = tag.key
       value               = tag.value
       propagate_at_launch = true
@@ -235,7 +219,7 @@ resource "aws_cloudwatch_metric_alarm" "high_cpu_utilization" {
     AutoScalingGroupName = aws_autoscaling_group.example.name
   }
 
-  comparison_operator = "GreatherThanThreshold"
+  comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   period              = 300
   statistic           = "Average"
@@ -244,7 +228,7 @@ resource "aws_cloudwatch_metric_alarm" "high_cpu_utilization" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "low_cpu_credit_balance" {
-  count = format("$.1s", var.instance_type) == "t" ? 1 : 0
+  count = format("%.1s", var.instance_type) == "t" ? 1 : 0
 
   alarm_name  = "${var.cluster_name}-low-cpu-credit-balance"
   namespace   = "AWS/EC2"
