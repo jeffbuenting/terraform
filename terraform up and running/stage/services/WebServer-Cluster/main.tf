@@ -23,6 +23,9 @@ provider "aws" {
 module "webserver_cluster" {
   source = "../../../modules/services/webserver-cluster"
 
+  ami         = "ami-08c40ec9ead489470"
+  server_text = "New Server Text"
+
   cluster_name           = "webservers-stage"
   db_remote_state_bucket = "jdb-terraform-state"
   db_remote_state_key    = "stage/data-stores/mysql/terraform.tfstate"
@@ -30,7 +33,6 @@ module "webserver_cluster" {
   min_size               = 2
   max_size               = 2
   enable_autoscaling     = false
-  enable_new_user_data   = true
 
   custom_tags = {
     Owner      = "team-foo"

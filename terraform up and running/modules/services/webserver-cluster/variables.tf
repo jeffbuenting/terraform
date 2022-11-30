@@ -34,17 +34,28 @@ variable "custom_tags" {
   default     = {}
 }
 
+variable "server_port" {
+  description = "The port the server will use for HTTP requests"
+  type        = number
+  default     = 8080
+}
+
 variable "enable_autoscaling" {
   description = "If set to true, enable auto scaling"
   type        = bool
 }
 
-variable "enable_new_user_data" {
-  description = "If set to true, use the new User Data Script"
-  type        = bool
+variable "ami" {
+  description = "The AMI to run in the cluster."
+  default     = "ami-08c40ec9ead489470"
+  type        = string
 }
 
-
+variable "server_text" {
+  description = "The text the web server should return."
+  default     = "Hello, World"
+  type        = string
+}
 
 locals {
   http_port    = 80
