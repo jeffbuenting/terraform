@@ -1,3 +1,22 @@
+terraform {
+  backend "s3" {
+    bucket = "jdb-terraform-state"
+    key    = "stage/services/webserver-cluster/terraform.tfstate"
+    region = "us-east-1"
+
+    dynamodb_table = "terraform-locks"
+    encrypt        = true
+  }
+
+
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 4.0"
+    }
+  }
+}
+
 provider "aws" {
   region = "us-east-1"
 }
@@ -13,12 +32,35 @@ data "aws_subnets" "default" {
   }
 }
 
+# data "terraform_remote_state" "db" {
+#   backend = "s3"
+
+#   config = {
+#     bucket = "jdb-terraform-state"
+#     key    = "stage/data-stores/mysql/terraform.tfstate"
+#     region = "us-east-1"
+#   }
+# }
+
+data "template_file" "user_data" {
+  template = file("user_data.sh")
+
+  vars = {
+    server_port = "${var.server_port}"
+    db_address  = 1
+    db_port     = 3306
+    #   # db_address  = data.terraform_remote_state.db.outputs.address
+    #   # db_port     = data.terraform_remote_state.db.outputs.port
+  }
+}
+
 resource "aws_launch_template" "example" {
   image_id               = "ami-08c40ec9ead489470"
   instance_type          = "t2.micro"
   vpc_security_group_ids = [aws_security_group.instance.id]
 
-  user_data = filebase64("user_data.sh")
+  user_data = base64encode(data.template_file.user_data.rendered)
+  # user_data = filebase64("user_data.sh")
 
   # Required when using a launch template with auto scaling group
   lifecycle {
