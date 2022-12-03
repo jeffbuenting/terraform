@@ -39,3 +39,13 @@ variable "max_size" {
   description = "The maximum number of EC2 instances in the ASG"
   type        = number
 }
+
+
+# local vars
+locals {
+  http_port    = 80
+  any_port     = 0
+  any_protocol = "-1"
+  tcp_protocol = "tcp"
+  all_ips      = ["0.0.0.0/0"]
+}
