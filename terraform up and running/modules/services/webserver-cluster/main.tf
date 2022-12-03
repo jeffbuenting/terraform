@@ -63,6 +63,16 @@ resource "aws_autoscaling_group" "example" {
     value               = "${var.cluster_name}-asg"
     propagate_at_launch = true
   }
+
+  dynamic "tag" {
+    for_each = var.custom_tags
+
+    content {
+      key                 = tag.key
+      value               = tag.value
+      propagate_at_launch = true
+    }
+  }
 }
 
 resource "aws_lb" "example" {
@@ -122,8 +132,6 @@ resource "aws_lb_listener_rule" "asg" {
     target_group_arn = aws_lb_target_group.asg.arn
   }
 }
-
-
 
 resource "aws_security_group" "instance" {
   name = "${var.cluster_name}-instance"
