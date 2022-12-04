@@ -12,3 +12,7 @@ output "alb_dns_name" {
   value       = aws_lb.example.dns_name
   description = "The domain of the load balancer"
 }
+
+# output "if_else_directive" {
+#   value = "Hello, %{if var.name != ""}${var.name}%{else}(unamed)%{endif}"
+# }

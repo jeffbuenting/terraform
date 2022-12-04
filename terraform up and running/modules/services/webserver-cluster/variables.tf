@@ -51,9 +51,26 @@ variable "enable_autoscaling" {
   type        = bool
 }
 
-variable "enable_new_user_data" {
-  description = "if set to true, use the new User Script"
-  type        = bool
+# variable "enable_new_user_data" {
+#   description = "if set to true, use the new User Script"
+#   type        = bool
+# }
+
+# variable "name" {
+#   description = "a name to render"
+#   value       = string
+# }
+
+variable "ami" {
+  description = "The AMI to run in the cluster"
+  default     = "ami-08c40ec9ead489470"
+  type        = string
+}
+
+variable "server_text" {
+  description = "The text the web server should return"
+  default     = "Hello, World"
+  type        = string
 }
 
 # local vars

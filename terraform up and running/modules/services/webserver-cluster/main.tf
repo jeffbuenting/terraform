@@ -22,7 +22,7 @@ data "aws_subnets" "default" {
 # }
 
 data "template_file" "user_data" {
-  count = var.enable_new_user_data ? 0 : 1
+  # count = var.enable_new_user_data ? 0 : 1
 
   template = file("${path.module}/user_data.sh")
 
@@ -32,33 +32,32 @@ data "template_file" "user_data" {
     db_port     = 3306
     #   # db_address  = data.terraform_remote_state.db.outputs.address
     #   # db_port     = data.terraform_remote_state.db.outputs.port
+    server_text = var.server_text
   }
 }
 
-data "template_file" "user_data_new" {
-  count = var.enable_new_user_data ? 1 : 0
+# data "template_file" "user_data_new" {
+#   count = var.enable_new_user_data ? 1 : 0
 
-  template = file("${path.module}/user_data_new.sh")
+#   template = file("${path.module}/user_data_new.sh")
 
-  vars = {
-    server_port = var.server_port
-  }
-}
+#   vars = {
+#     server_port = var.server_port
+#   }
+# }
 
 resource "aws_launch_template" "example" {
-  image_id               = "ami-08c40ec9ead489470"
+  image_id               = var.ami
   instance_type          = var.instance_type
   vpc_security_group_ids = [aws_security_group.instance.id]
 
-  user_data = (
-    length(data.template_file.user_data[*]) > 0
-    ? base64encode(data.template_file.user_data[0].rendered)
-    : base64encode(data.template_file.user_data_new[0].rendered)
-  )
+  # user_data = (
+  #   length(data.template_file.user_data[*]) > 0
+  #   ? base64encode(data.template_file.user_data[0].rendered)
+  #   : base64encode(data.template_file.user_data_new[0].rendered)
+  # )
 
-
-
-  # user_data = base64encode(data.template_file.user_data.rendered)
+  user_data = base64encode(data.template_file.user_data.rendered)
 
   # Required when using a launch template with auto scaling group
   lifecycle {
@@ -67,6 +66,9 @@ resource "aws_launch_template" "example" {
 }
 
 resource "aws_autoscaling_group" "example" {
+  # explicitly depend on the launch template's name so each time it's replaced, this ASG is also replaced
+  name = "${var.cluster_name}-${aws_launch_template.example.name}"
+
   launch_template {
     id = aws_launch_template.example.id
   }
@@ -78,6 +80,14 @@ resource "aws_autoscaling_group" "example" {
   min_size = var.min_size
   max_size = var.max_size
 
+  # wait for at least this many instances to pass health checks before considering the ASG deployment complete
+  min_elb_capacity = var.min_size
+
+  # when replacing this ASG, create the replacement first, and only delete the original after
+  lifecycle {
+    create_before_destroy = true
+  }
+
   tag {
     key                 = "Name"
     value               = "${var.cluster_name}-asg"
@@ -85,7 +95,11 @@ resource "aws_autoscaling_group" "example" {
   }
 
   dynamic "tag" {
-    for_each = var.custom_tags
+    for_each = {
+      for key, value in var.custom_tags :
+      key => upper(value)
+      if key != "Name"
+    }
 
     content {
       key                 = tag.key
