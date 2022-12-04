@@ -51,6 +51,11 @@ variable "enable_autoscaling" {
   type        = bool
 }
 
+variable "enable_new_user_data" {
+  description = "if set to true, use the new User Script"
+  type        = bool
+}
+
 # local vars
 locals {
   http_port    = 80

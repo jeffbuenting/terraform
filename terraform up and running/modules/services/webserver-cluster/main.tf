@@ -22,6 +22,8 @@ data "aws_subnets" "default" {
 # }
 
 data "template_file" "user_data" {
+  count = var.enable_new_user_data ? 0 : 1
+
   template = file("${path.module}/user_data.sh")
 
   vars = {
@@ -33,12 +35,30 @@ data "template_file" "user_data" {
   }
 }
 
+data "template_file" "user_data_new" {
+  count = var.enable_new_user_data ? 1 : 0
+
+  template = file("${path.module}/user_data_new.sh")
+
+  vars = {
+    server_port = var.server_port
+  }
+}
+
 resource "aws_launch_template" "example" {
   image_id               = "ami-08c40ec9ead489470"
   instance_type          = var.instance_type
   vpc_security_group_ids = [aws_security_group.instance.id]
 
-  user_data = base64encode(data.template_file.user_data.rendered)
+  user_data = (
+    length(data.template_file.user_data[*]) > 0
+    ? base64encode(data.template_file.user_data[0].rendered)
+    : base64encode(data.template_file.user_data_new[0].rendered)
+  )
+
+
+
+  # user_data = base64encode(data.template_file.user_data.rendered)
 
   # Required when using a launch template with auto scaling group
   lifecycle {
