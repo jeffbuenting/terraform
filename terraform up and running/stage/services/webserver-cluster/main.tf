@@ -21,8 +21,8 @@ provider "aws" {
   region = "us-east-1"
 }
 
-module "webserver_cluster" {
-  source = "../../../modules/services/webserver-cluster"
+module "hello-world" {
+  source = "../../../modules/services/hello-world-app"
 
   ami         = "ami-08c40ec9ead489470"
   server_text = "New server text"
