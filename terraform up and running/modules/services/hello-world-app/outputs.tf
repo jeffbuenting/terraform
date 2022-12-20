@@ -1,7 +1,7 @@
-output "public_ip" {
-  value       = aws_lb.example.dns_name
-  description = "The domain name of the load balancer"
-}
+# output "public_ip" {
+#   value       = module.alb.
+#   description = "The domain name of the load balancer"
+# }
 
 output "asg_name" {
   value       = module.asg.asg_name

@@ -24,6 +24,8 @@ provider "aws" {
 module "hello-world" {
   source = "../../../modules/services/hello-world-app"
 
+  environment = "stage"
+
   ami         = "ami-08c40ec9ead489470"
   server_text = "New server text"
 
